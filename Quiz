@@ -1,0 +1,85 @@
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
+public class Quiz {
+    private List<QuizQuestion> questions;
+    private int score;
+    private List<Boolean> results;
+
+    public Quiz() {
+        questions = new ArrayList<>();
+        results = new ArrayList<>();
+        score = 0;
+
+        // Add some questions
+        List<String> options1 = List.of("Option 1", "Option 2", "Option 3", "Option 4");
+        questions.add(new QuizQuestion("Question 1?", options1, 1));
+
+        List<String> options2 = List.of("Option A", "Option B", "Option C", "Option D");
+        questions.add(new QuizQuestion("Question 2?", options2, 3));
+
+        List<String> options3 = List.of("Option X", "Option Y", "Option Z", "Option W");
+        questions.add(new QuizQuestion("Question 3?", options3, 2));
+    }
+
+    public void startQuiz() {
+        Scanner scanner = new Scanner(System.in);
+
+        for (int i = 0; i < questions.size(); i++) {
+            QuizQuestion question = questions.get(i);
+            System.out.println("Question " + (i + 1) + ": " + question.getQuestion());
+            List<String> options = question.getOptions();
+            for (int j = 0; j < options.size(); j++) {
+                System.out.println((j + 1) + ". " + options.get(j));
+            }
+
+            boolean answered = false;
+            ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+            Runnable timeoutTask = () -> {
+                if (!answered) {
+                    System.out.println("Time is up!");
+                    results.add(false);
+                    executor.shutdown();
+                }
+            };
+            executor.schedule(timeoutTask, 10, TimeUnit.SECONDS); // 10 seconds timer
+
+            long startTime = System.currentTimeMillis();
+            int userAnswer = scanner.nextInt();
+            long elapsedTime = System.currentTimeMillis() - startTime;
+
+            if (elapsedTime < 10000) {
+                answered = true;
+                if (userAnswer == question.getCorrectOption() + 1) {
+                    score++;
+                    results.add(true);
+                } else {
+                    results.add(false);
+                }
+            }
+            executor.shutdown();
+        }
+        scanner.close();
+        displayResults();
+    }
+
+    private void displayResults() {
+        System.out.println("Quiz Over!");
+        System.out.println("Your final score is: " + score + "/" + questions.size());
+        for (int i = 0; i < questions.size(); i++) {
+            QuizQuestion question = questions.get(i);
+            boolean result = results.get(i);
+            System.out.println("Question " + (i + 1) + ": " + question.getQuestion());
+            System.out.println("Your answer: " + (result ? "Correct" : "Incorrect"));
+        }
+    }
+
+    public static void main(String[] args) {
+        Quiz quiz = new Quiz();
+        quiz.startQuiz();
+    }
+}
